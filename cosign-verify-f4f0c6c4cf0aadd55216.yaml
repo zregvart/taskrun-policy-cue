@@ -1,0 +1,98 @@
+apiVersion: tekton.dev/v1beta1
+kind: TaskRun
+metadata:
+  annotations:
+    chains.tekton.dev/retries: "3"
+    chains.tekton.dev/signed: failed
+    chains.tekton.dev/transparency: https://rekor.sigstore.dev/api/v1/log/entries?logIndex=1760120
+    pipeline.tekton.dev/release: 79a0395
+    results.tekton.dev/record: tekton-chains/results/4fadbad3-40be-41d0-9fc1-8d7f6e2fc755/records/4fadbad3-40be-41d0-9fc1-8d7f6e2fc755
+    results.tekton.dev/result: tekton-chains/results/4fadbad3-40be-41d0-9fc1-8d7f6e2fc755
+    tekton.dev/displayName: cosign verify
+    tekton.dev/pipelines.minVersion: "0.19"
+    tekton.dev/tags: cosign, chains, signature
+  creationTimestamp: "2022-03-22T13:54:32Z"
+  finalizers:
+  - chains.tekton.dev
+  generation: 1
+  labels:
+    app.kubernetes.io/managed-by: tekton-pipelines
+    app.kubernetes.io/version: "0.1"
+    operator.tekton.dev/provider-type: redhat
+    tekton.dev/task: cosign-verify
+  name: cosign-verify-f4f0c6c4cf0aadd55216
+  namespace: tekton-chains
+  resourceVersion: "13903112"
+  uid: 4fadbad3-40be-41d0-9fc1-8d7f6e2fc755
+spec:
+  params:
+  - name: PUBLIC_KEY
+    value: |
+      -----BEGIN PUBLIC KEY-----
+      MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAENE67fL1rVd0BpkpTV9l4laKUYcw+
+      Bq96Z52dLcyol7c1B3dm1T/BMusAu139o6e7gWxJZuOnMpqOAO3SwQ1LYg==
+      -----END PUBLIC KEY-----
+  - name: IMAGE
+    value: image-registry.openshift-image-registry.svc:5000/tekton-chains/kaniko-chains
+  serviceAccountName: pipeline
+  taskRef:
+    bundle: quay.io/zregvart_redhat/appstudio-tasks:2022-03-22-130413-1
+    kind: Task
+    name: cosign-verify
+  timeout: 1h0m0s
+status:
+  completionTime: "2022-03-22T13:54:42Z"
+  conditions:
+  - lastTransitionTime: "2022-03-22T13:54:42Z"
+    message: All Steps have completed executing
+    reason: Succeeded
+    status: "True"
+    type: Succeeded
+  podName: cosign-verify-f4f0c6c4cf0aadd55216-pod-vqbzn
+  startTime: "2022-03-22T13:54:34Z"
+  steps:
+  - container: step-verify
+    imageID: quay.io/zregvart_redhat/appstudio-utils@sha256:6980adaa5a7de03567bda4dbb35ad15026ce2696fd49be3080d70902cc10e6a2
+    name: verify
+    terminated:
+      containerID: cri-o://34c724b28fe377597587366a3e550ee79432720ab7d66a4f66583bfc149836c7
+      exitCode: 0
+      finishedAt: "2022-03-22T13:54:41Z"
+      message: '[{"key":"VERIFY_JSON","value":"\n[{\"critical\":{\"identity\":{\"docker-reference\":\"image-registry.openshift-image-registry.svc:5000/tekton-chains/kaniko-chains\"},\"image\":{\"docker-manifest-digest\":\"sha256:27c8406f403d7841a82ca96cd92c158cdc24c82fa446f03ec40896e1761cf0e1\"},\"type\":\"cosign
+        container image signature\"},\"optional\":null}]\n","type":1}]'
+      reason: Completed
+      startedAt: "2022-03-22T13:54:41Z"
+  taskResults:
+  - name: VERIFY_JSON
+    value: |2
+
+      [{"critical":{"identity":{"docker-reference":"image-registry.openshift-image-registry.svc:5000/tekton-chains/kaniko-chains"},"image":{"docker-manifest-digest":"sha256:27c8406f403d7841a82ca96cd92c158cdc24c82fa446f03ec40896e1761cf0e1"},"type":"cosign container image signature"},"optional":null}]
+  taskSpec:
+    description: cosign-verify verifies the signature of the image reference with
+      the provided public key.
+    params:
+    - description: Public key used to verify the signature. Provided as a PEM-encoded
+        string or as a valid cosign key reference.
+      name: PUBLIC_KEY
+      type: string
+    - description: Pull reference of the image to verify.
+      name: IMAGE
+      type: string
+    results:
+    - description: Result of verification in JSON format
+      name: VERIFY_JSON
+    steps:
+    - image: quay.io/zregvart_redhat/appstudio-utils:2022-03-22-130413
+      name: verify
+      resources: {}
+      script: |
+        #!/usr/bin/env bash
+        echo "App Studio Utility Task $(context.task.name)"
+        /appstudio-utils/util-scripts/$(context.task.name).sh "$(params.IMAGE)" "$(params.PUBLIC_KEY)" "$(results.VERIFY_JSON.path)"
+      volumeMounts:
+      - mountPath: /etc/ssl/certs/
+        name: ca-certificates
+    volumes:
+    - name: ca-certificates
+      secret:
+        secretName: chains-ca-cert
